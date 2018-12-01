@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wood Stove Servoing</title>
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> -->
+	<!-- <script type="text/javascript" src="/static/test.js"></script> -->
+	<!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+	<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"> -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/static/Chart.bundle.js"></script>
+    <script>
+        var ws;
+		var counter = 0;
+		var data2;
+		var data;
+		var options;
+		var chart2
+		var chart;
+		var currentRadioValue;
+		var lastTargetValue;
+		var lastAirflowValue;
+		var lastKpValue;
+		var lastKiValue;
+		var lastKdValue;
+  
+        function onLoad() {
+            ws = new WebSocket("ws://192.168.1.50:8888/websocket");
+			ws.onmessage = function(e) {
+				var args = e.data.split(',');
+				if (args[0] == 'Temperature') {
+					data2.datasets[0].data = []
+					data2.datasets[1].data = []
+					for (var i = 1; i < args.length; i+=3) {
+						var d = new Date(0);
+						d.setUTCSeconds(parseFloat(args[i]));
+						data2.datasets[1].data.push({x: d, y: parseFloat(args[i + 1])});
+						data2.datasets[0].data.push({x: d, y: parseInt(args[i + 2])});
+					}
+					window.myLine.update();
+				
+					<!-- data.removeRows(0, data.getNumberOfRows()); -->
+					<!-- <!-- var temp = 100; --> -->
+					<!-- for (var i = 1; i < args.length; i+=2) { -->
+						<!-- var d = new Date(0); -->
+						<!-- d.setUTCSeconds(parseFloat(args[i])); -->
+						<!-- data.addRow([[d.getHours(), d.getMinutes(), d.getSeconds()], parseFloat(args[i + 1])]) -->
+						<!-- <!-- data.addRow([[d.getHours(), d.getMinutes(), d.getSeconds()], parseFloat(args[i + 1]), temp]) --> -->
+						<!-- <!-- temp = temp - 1 --> -->
+						<!-- <!-- if (temp < 0) --> -->
+							<!-- <!-- temp = 100 --> -->
+					<!-- } -->
+					<!-- chart.draw(data, options); -->
+				} else if (args[0] == 'Target') {
+					document.getElementById('target').value = args[1];
+					lastTargetValue = args[1];
+				} else if (args[0] == 'Airflow') {
+					if (document.getElementsByName('mode')[1].checked == false) {
+						document.getElementById('airflow').value = args[1];
+						lastAirflowValue = args[1];
+					}
+				} else if (args[0] == 'State') {
+					document.getElementById('state').value = args[1];
+				} else if (args[0] == 'Mode') {
+					document.getElementsByName('mode')[parseInt(args[1])].checked = true;
+					handleRadioClick(document.getElementsByName('mode')[parseInt(args[1])], false);
+				} else if (args[0] == 'Kp') {
+					document.getElementById('kp').value = args[1];
+					lastKpValue = args[1];
+				} else if (args[0] == 'Ki') {
+					document.getElementById('ki').value = args[1];
+					lastKiValue = args[1];
+				} else if (args[0] == 'Kd') {
+					document.getElementById('kd').value = args[1];
+					lastKdValue = args[1];
+				} else if (args[0] == 'PidOut') {
+					document.getElementById('pidout').value = args[1];
+				}
+            };
+			ws.onopen = function(e) {
+				updateInfos();
+			}	
+ 
+			// Load the Visualization API and the corechart package.
+			google.charts.load('current', {'packages':['line', 'corechart']});
+
+			// Set a callback to run when the Google Visualization API is loaded.
+			google.charts.setOnLoadCallback(createChart);
+        }
+		
+		function updateInfos() {
+			ws.send('Get,Target');
+			setTimeout (function() { ws.send('Get,Airflow'); }, 50);
+			setTimeout (function() { ws.send('Get,Mode'); }, 50);
+			setTimeout (function() { ws.send('Get,Kp'); }, 50);
+			setTimeout (function() { ws.send('Get,Ki'); }, 50);
+			setTimeout (function() { ws.send('Get,Kd'); }, 50);
+			setTimeout (function() { ws.send('Get,PidOut'); }, 50);
+		}
+
+		function createChart () {
+			<!-- data = new google.visualization.DataTable(); -->
+			<!-- data.addColumn('timeofday', 'Time'); -->
+			<!-- data.addColumn('number', 'Temperature (°C)'); -->
+			<!-- <!-- data.addColumn('number', 'Airflow (%)'); --> -->
+			<!-- // Set chart options -->
+			<!-- options = { -->
+				<!-- <!-- chart: { --> -->
+					<!-- <!-- title: 'Temperature history', --> -->
+				<!-- <!-- }, --> -->
+				<!-- title: 'Temperature history', -->
+				<!-- curveType: 'function', -->
+				<!-- legend: { position: 'bottom' }, -->
+				<!-- <!-- explorer : { actions: ['dragToZoom', 'rightClickToReset'], keepInBounds: true }, --> -->
+			    <!-- animation:{ -->
+					<!-- duration: 1000, -->
+					<!-- easing: 'linear', -->
+					<!-- startup: true -->
+				<!-- }, -->
+				<!-- height: window.innerHeight, -->
+				<!-- width: window.innerWidth, -->
+				<!-- theme: 'material', -->
+				<!-- <!-- series: { --> -->
+				  <!-- <!-- // Gives each series an axis name that matches the Y-axis below. --> -->
+				  <!-- <!-- 0: {axis: 'Temperature'}, --> -->
+				  <!-- <!-- 1: {axis: 'Airflow'} --> -->
+				<!-- <!-- }, --> -->
+				<!-- <!-- axes: { --> -->
+				  <!-- <!-- // Adds labels to each axis; they don't have to match the axis names. --> -->
+				  <!-- <!-- y: { --> -->
+					<!-- <!-- Temperature: {label: 'Temperature (°C)'}, --> -->
+					<!-- <!-- Airflow: {label: 'Airflow (%)'} --> -->
+				  <!-- <!-- } --> -->
+				<!-- <!-- } --> -->
+			<!-- }; -->
+
+			<!-- // Instantiate our chart -->
+			<!-- chart = new google.visualization.LineChart(document.getElementById('chart_div')); -->
+			<!-- chart = new google.charts.Line(document.getElementById('chart_div')); -->
+			
+			data2 = {
+				datasets: [{
+					label: 'Airflow',
+					pointRadius: 2,
+					borderColor: 'rgb(54, 162, 235)',
+					backgroundColor: 'rgb(54, 162, 235)',
+					fill: false,
+					yAxisID: 'y-axis-1'
+				}, {
+					label: 'Temperature',
+					pointRadius: 2,
+					borderColor: 'rgb(255, 99, 132)',
+					backgroundColor: 'rgb(255, 99, 132)',
+					fill: false,
+					yAxisID: 'y-axis-2'
+				}]
+			};
+			
+			var chart2 = document.getElementById('canvas').getContext('2d');
+			window.myLine = Chart.Line(chart2, {
+				data: data2,
+				options: {
+					responsive: true,
+					hoverMode: 'index',
+					stacked: false,
+					title: {
+						display: true,
+						text: 'Temperature history'
+					},
+					scales: {
+						xAxes: [{
+							type: 'time',
+							time: {
+								displayFormats: {
+									quarter: 'h:mm:ss a'
+								}
+							}
+						}],
+						yAxes: [{
+							type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+							display: true,
+							position: 'left',
+							id: 'y-axis-1',
+							gridLines: {
+								drawOnChartArea: false, // only want the grid lines for one axis to show up
+							},
+							ticks: {
+								min: 0,
+								max: 100
+							}
+						}, {
+							type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+							display: true,
+							position: 'right',
+							id: 'y-axis-2'
+						}],
+					}
+				}
+			});
+			
+			setTimeout (function() { updateData(); }, 50);
+		}
+		
+		function updateData() {
+			ws.send('Get,Temperature');
+			setTimeout (function() { ws.send('Get,Airflow'); }, 100);
+			setTimeout (function() { ws.send('Get,State'); }, 100);
+			setTimeout (function() { ws.send('Get,PidOut'); }, 100);
+			setTimeout (function() { updateData(); }, 1000);						
+		}
+		
+		function updateTargetKey(e) {
+			var target = document.getElementById("target").value;
+			if (e.keyCode == 13 && target !== lastTargetValue) {
+				ws.send('Set,Target,' + target);
+				lastTargetValue = target;
+				return false;
+			}
+		}
+		
+		function updateTargetClick(e) {
+			var target = document.getElementById("target").value;
+			if (target !== lastTargetValue) {
+				ws.send('Set,Target,' + target);
+				lastTargetValue = target;
+				return false;
+			}
+		}
+		
+		function updateAirflowKey(e) {
+			var airflow = document.getElementById("airflow").value;
+			if (e.keyCode == 13 && airflow !== lastAirflowValue) {
+				ws.send('Set,Airflow,' + airflow);
+				lastAirflowValue = airflow;
+				return false;
+			}
+		}
+		
+		function updateAirflowClick(e) {
+			var airflow = document.getElementById("airflow").value;
+			if (airflow !== lastAirflowValue) {
+				ws.send('Set,Target,' + airflow);
+				lastTargetValue = airflow;
+				return false;
+			}
+		}
+		
+		function handleRadioClick(myRadio, modeCommand) {
+			if (currentRadioValue != myRadio.value) {
+				currentRadioValue = myRadio.value;
+				if (myRadio.value == 0) {
+					document.getElementById("airflow").disabled = true;
+				} else {
+					document.getElementById("airflow").disabled = false;
+				}
+				if (modeCommand == true) {
+					ws.send('Set,Mode,' + myRadio.value);
+				}
+			}
+		}
+		
+		function updateKpClick(e) {
+			var kp = document.getElementById("kp").value;
+			if (kp !== lastKpValue) {
+				ws.send('Set,Kp,' + kp);
+				lastKpValue = kp;
+				return false;
+			}
+		}
+		
+		function updateKpKey(e) {
+			var kp = document.getElementById("kp").value;
+			if (e.keyCode == 13 && kp !== lastKpValue) {
+				ws.send('Set,Kp,' + kp);
+				lastKpValue = kp;
+				return false;
+			}
+		}
+		
+		function updateKiClick(e) {
+			var ki = document.getElementById("ki").value;
+			if (ki !== lastKiValue) {
+				ws.send('Set,Ki,' + ki);
+				lastKiValue = ki;
+				return false;
+			}
+		}
+		
+		function updateKiKey(e) {
+			var ki = document.getElementById("ki").value;
+			if (e.keyCode == 13 && ki !== lastKiValue) {
+				ws.send('Set,Ki,' + ki);
+				lastKiValue = ki;
+				return false;
+			}
+		}
+		
+		function updateKdClick(e) {
+			var kd = document.getElementById("kd").value;
+			if (kd !== lastKdValue) {
+				ws.send('Set,Kd,' + kd);
+				lastKdValue = kd;
+				return false;
+			}
+		}
+		
+		function updateKdKey(e) {
+			var kd = document.getElementById("kd").value;
+			if (e.keyCode == 13 && kd !== lastKdValue) {
+				ws.send('Set,Kd,' + kd);
+				lastKdValue = kd;
+				return false;
+			}
+		}
+		
+		function sleep(seconds) {
+			var waitUntil = new Date().getTime() + seconds * 1000;
+			while (new Date().getTime() < waitUntil) true;
+		}
+    </script>
+</head>
+<body onload="onLoad();">
+	<!-- <div class="container"> -->
+	  <!-- <h2>Configuration</h2> -->
+	  <!-- <div class="panel panel-default"> -->
+		<!-- <div class="panel-body"> -->
+	<!-- <form> -->
+	<div style="width: 100%; overflow: hidden;">
+		<div style="width: 240px; float: left;">
+			<fieldset>
+				<legend>Configuration</legend>
+				<strong>Target:</strong>&nbsp;
+				<input type="number" id="target" maxlength="3" style="max-width: 4em;" onkeypress="return updateTargetKey(event)" onclick="return updateTargetClick(event)"/><br>
+				<strong>Airflow:</strong>&nbsp;
+				<input type="number" id="airflow" maxlength="3" style="max-width: 4em;" onkeypress="return updateAirflowKey(event)" onclick="return updateAirflowClick(event)"/><br>
+				<strong>State:</strong>&nbsp;
+				<input type="text" id="state" maxlength="20" style="max-width: 11em;" disabled="true"/>
+				<br>&nbsp;
+			</fieldset>
+		</div>
+		<div style="margin-left: 10px; width: 240px; float: left;">
+			<fieldset>
+				<legend>Configuration 2</legend>
+				<strong>Mode:</strong><br/>
+				<dd><input type="radio" name="mode" value="0" onclick="handleRadioClick(this, true);"/>Automatic<br>
+				<dd><input type="radio" name="mode" value="1" onclick="handleRadioClick(this, true);"/>Manual
+				<br>&nbsp;
+			</fieldset>
+		</div>
+		<div style="margin-left: 10px; width: 240px; float: left;">
+			<fieldset>
+				<legend>PID</legend>
+				<strong>Kp:</strong>&nbsp;
+				<input type="number" id="kp" maxlength="7" style="max-width: 6em;" onkeypress="return updateKpKey(event)" onclick="return updateKpClick(event)"/><br>
+				<strong>Ki:</strong>&nbsp;
+				<input type="number" id="ki" maxlength="7" style="max-width: 6em;" onkeypress="return updateKiKey(event)" onclick="return updateKiClick(event)"/><br>
+				<strong>Kd:</strong>&nbsp;
+				<input type="number" id="kd" maxlength="7" style="max-width: 6em;" onkeypress="return updateKdKey(event)" onclick="return updateKdClick(event)"/><br>
+				<strong>PID out:</strong>&nbsp;
+				<input type="number" id="pidout" maxlength="6" style="max-width: 5em;" disabled="true"/>
+			</fieldset>
+		</div>
+	</div>
+
+	  <!-- </div> -->
+	<!-- </div> -->
+	<div style="width:70%;">
+		<canvas id="canvas"></canvas>
+	</div>
+	<div id="chart_div"></div>
+</body>
+</html>
