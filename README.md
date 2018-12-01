@@ -1,0 +1,2 @@
+# WoodStove
+Wood stove management
