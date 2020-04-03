@@ -2,6 +2,7 @@
 import time
 from temperature import Temperature
 from motor import Motor
+from servomotor import ServoMotor
 from pid import PID
 from agenda import Agenda
 from enum import Enum
@@ -49,81 +50,81 @@ currentTemp = 0.0
 currentMode = Mode.AUTOMATIC
 currentState = State.FIRE_OUT
     
-def motorTest():
-    print("rotate(True, 1, 3):  {:.3f}".format(motor.getAngle()))
-    motor.rotate(True, 1, 3)
-    time.sleep(1)
-    print("rotate(False, 2, 3): {:.3f}".format(motor.getAngle()))
-    motor.rotate(False, 2, 3)
-    time.sleep(1)
-    print("rotateAngle(-90): {:.3f}".format(motor.getAngle()))
-    motor.rotateAngle(-90, 3)
-    time.sleep(1)
-    print("setAirFlow(50): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(50)
-    time.sleep(1)
-    print("setAirFlow(75): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(75)
-    time.sleep(1)
-    print("setAirFlow(75) 2: {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(75)
-    time.sleep(1)
-    print("setAirFlow(100): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(100)
-    time.sleep(1)
-    print("rotateAngle(-90): {:.3f}".format(motor.getAngle()))
-    motor.rotateAngle(-90, 3)
-    print("Angle at the end: {:.3f}".format(motor.getAngle()))
+# def motorTest():
+    # print("rotate(True, 1, 3):  {:.3f}".format(motor.getAngle()))
+    # motor.rotate(True, 1, 3)
+    # time.sleep(1)
+    # print("rotate(False, 2, 3): {:.3f}".format(motor.getAngle()))
+    # motor.rotate(False, 2, 3)
+    # time.sleep(1)
+    # print("rotateAngle(-90): {:.3f}".format(motor.getAngle()))
+    # motor.rotateAngle(-90, 3)
+    # time.sleep(1)
+    # print("setAirFlow(50): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(50)
+    # time.sleep(1)
+    # print("setAirFlow(75): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(75)
+    # time.sleep(1)
+    # print("setAirFlow(75) 2: {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(75)
+    # time.sleep(1)
+    # print("setAirFlow(100): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(100)
+    # time.sleep(1)
+    # print("rotateAngle(-90): {:.3f}".format(motor.getAngle()))
+    # motor.rotateAngle(-90, 3)
+    # print("Angle at the end: {:.3f}".format(motor.getAngle()))
     
-def motorTest2():
-    print("setAirFlow(50): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(50)
-    time.sleep(1)
-    print("setAirFlow(75): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(75)
-    time.sleep(1)
-    print("setAirFlow(0): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(0)
-    time.sleep(1)
-    print("setAirFlow(100): {:.3f}".format(motor.getAngle()))
-    motor.setAirFlow(100)
-    print("Angle at the end: {:.3f}".format(motor.getAngle()))
+# def motorTest2():
+    # print("setAirFlow(50): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(50)
+    # time.sleep(1)
+    # print("setAirFlow(75): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(75)
+    # time.sleep(1)
+    # print("setAirFlow(0): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(0)
+    # time.sleep(1)
+    # print("setAirFlow(100): {:.3f}".format(motor.getAngle()))
+    # motor.setAirFlow(100)
+    # print("Angle at the end: {:.3f}".format(motor.getAngle()))
     
-def motorTest3():
-    for i in range(25, -1, -1):
-        print("setAirFlow({}): {:.3f}".format((i * 4) - 1, motor.getAngle()))
-        motor.setAirFlow((i * 4) - 1)
-        print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
-        motor.setAirFlow(i * 4)
-    for i in range(0, 26, 1):
-        print("setAirFlow({}): {:.3f}".format((i * 4) - 1, motor.getAngle()))
-        motor.setAirFlow((i * 4) - 1)
-        print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
-        motor.setAirFlow(i * 4)
-    print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
+# def motorTest3():
+    # for i in range(25, -1, -1):
+        # print("setAirFlow({}): {:.3f}".format((i * 4) - 1, motor.getAngle()))
+        # motor.setAirFlow((i * 4) - 1)
+        # print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
+        # motor.setAirFlow(i * 4)
+    # for i in range(0, 26, 1):
+        # print("setAirFlow({}): {:.3f}".format((i * 4) - 1, motor.getAngle()))
+        # motor.setAirFlow((i * 4) - 1)
+        # print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
+        # motor.setAirFlow(i * 4)
+    # print("setAirFlow({}): {:.3f}".format(i * 4, motor.getAngle()))
     
-def motorTest4(minPercent):
-    print("setAirFlow(0): {:.3f}".format(motor.getAngle()))
-    for i in range(100, minPercent+1, -1):
-        motor.setAirFlow(i)
-        print("setAirFlow({}): {:.3f}".format(i, motor.getAngle()))
-        # motor.setAirFlow(i - 2)
-        # print("setAirFlow({}): {:.3f}".format(i - 2, motor.getAngle()))
-        time.sleep(0.1)
-    for i in range(minPercent, 101, 1):
-        # motor.setAirFlow(i + 2)
-        # print("setAirFlow({}): {:.3f}".format(i + 2, motor.getAngle()))
-        motor.setAirFlow(i)
-        print("setAirFlow({}): {:.3f}".format(i, motor.getAngle()))
-        time.sleep(0.1)
+# def motorTest4(minPercent):
+    # print("setAirFlow(0): {:.3f}".format(motor.getAngle()))
+    # for i in range(100, minPercent+1, -1):
+        # motor.setAirFlow(i)
+        # print("setAirFlow({}): {:.3f}".format(i, motor.getAngle()))
+        # # motor.setAirFlow(i - 2)
+        # # print("setAirFlow({}): {:.3f}".format(i - 2, motor.getAngle()))
+        # time.sleep(0.1)
+    # for i in range(minPercent, 101, 1):
+        # # motor.setAirFlow(i + 2)
+        # # print("setAirFlow({}): {:.3f}".format(i + 2, motor.getAngle()))
+        # motor.setAirFlow(i)
+        # print("setAirFlow({}): {:.3f}".format(i, motor.getAngle()))
+        # time.sleep(0.1)
     
-def motorTest5():
-    print("rotateAngle(45): {:.3f}".format(motor.getAngle()))
-    motor.rotateAngle(45, 1);
-    time.sleep(5);
-    print("rotateAngle(-45): {:.3f}".format(motor.getAngle()))
-    motor.rotateAngle(-45, 1);
-    print("Angle end: {:.3f}".format(motor.getAngle()))
+# def motorTest5():
+    # print("rotateAngle(45): {:.3f}".format(motor.getAngle()))
+    # motor.rotateAngle(45, 1);
+    # time.sleep(5);
+    # print("rotateAngle(-45): {:.3f}".format(motor.getAngle()))
+    # motor.rotateAngle(-45, 1);
+    # print("Angle end: {:.3f}".format(motor.getAngle()))
     
 def callback(message):
     global newValue, targetSet, temperatures, airflows, tempTarget, currentMode, currentState, currentAirFlow, pid, motor
@@ -205,7 +206,7 @@ if __name__ == "__main__":
     server = WebServer(callback)
     agenda = Agenda()
     temp = Temperature()
-    motor = Motor(3)
+    motor = ServoMotor()
     
     # time.sleep(5)
     # motorTest4(15)
