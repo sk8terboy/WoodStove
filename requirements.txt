@@ -15,7 +15,7 @@ cffi==1.11.5
 chardet==3.0.4
 Click==7.0
 colorama==0.3.7
-cryptography==2.4.2
+cryptography==3.2
 discovery==0.0.4
 drumhat==0.1.0
 envirophat==1.0.0
