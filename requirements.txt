@@ -70,7 +70,7 @@ picamera==1.13
 picraft==1.0
 piglow==1.2.5
 pigpio==1.44
-Pillow==5.4.1
+Pillow==7.1.0
 protobuf==3.14.0
 psutil==5.5.1
 pyasn1==0.4.2
