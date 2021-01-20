@@ -80,7 +80,7 @@
             };
 			ws.onopen = function(e) {
 				updateInfos();
-			}	
+			}
  
 			// Load the Visualization API and the corechart package.
 			google.charts.load('current', {'packages':['line', 'corechart']});
@@ -211,6 +211,10 @@
 		}
 		
 		function updateTargetKey(e) {
+			if (document.getElementById("target").value < 0)
+				document.getElementById("target").value = 0;
+			else if (document.getElementById("target").value > 300)
+				document.getElementById("target").value = 300;
 			var target = document.getElementById("target").value;
 			if (e.keyCode == 13 && target !== lastTargetValue) {
 				ws.send('Set,Target,' + target);
@@ -220,6 +224,34 @@
 		}
 		
 		function updateTargetClick(e) {
+			if (document.getElementById("target").value < 0)
+				document.getElementById("target").value = 0;
+			else if (document.getElementById("target").value > 300)
+				document.getElementById("target").value = 300;
+			var target = document.getElementById("target").value;
+			if (target !== lastTargetValue) {
+				ws.send('Set,Target,' + target);
+				lastTargetValue = target;
+				return false;
+			}
+		}
+		
+		function updateTargetUpClick(e) {
+			document.getElementById("target").value = parseInt(document.getElementById("target").value) + 5;
+			if (document.getElementById("target").value > 300)
+				document.getElementById("target").value = 300;
+			var target = document.getElementById("target").value;
+			if (target !== lastTargetValue) {
+				ws.send('Set,Target,' + target);
+				lastTargetValue = target;
+				return false;
+			}
+		}
+		
+		function updateTargetDownClick(e) {
+			document.getElementById("target").value = parseInt(document.getElementById("target").value) - 5;
+			if (document.getElementById("target").value < 0)
+				document.getElementById("target").value = 0;
 			var target = document.getElementById("target").value;
 			if (target !== lastTargetValue) {
 				ws.send('Set,Target,' + target);
@@ -229,6 +261,10 @@
 		}
 		
 		function updateAirflowKey(e) {
+			if (document.getElementById("airflow").value < 0)
+				document.getElementById("airflow").value = 0;
+			else if (document.getElementById("airflow").value > 100)
+				document.getElementById("airflow").value = 100;
 			var airflow = document.getElementById("airflow").value;
 			if (e.keyCode == 13 && airflow !== lastAirflowValue) {
 				ws.send('Set,Airflow,' + airflow);
@@ -238,10 +274,38 @@
 		}
 		
 		function updateAirflowClick(e) {
+			if (document.getElementById("airflow").value < 0)
+				document.getElementById("airflow").value = 0;
+			else if (document.getElementById("airflow").value > 100)
+				document.getElementById("airflow").value = 100;
 			var airflow = document.getElementById("airflow").value;
 			if (airflow !== lastAirflowValue) {
-				ws.send('Set,Target,' + airflow);
+				ws.send('Set,Airflow,' + airflow);
 				lastTargetValue = airflow;
+				return false;
+			}
+		}
+		
+		function updateAirflowUpClick(e) {
+			document.getElementById("airflow").value = parseInt(document.getElementById("airflow").value) + 5;
+			if (document.getElementById("airflow").value > 100)
+				document.getElementById("airflow").value = 100;
+			var airflow = document.getElementById("airflow").value;
+			if (airflow !== lastAirflowValue) {
+				ws.send('Set,Airflow,' + airflow);
+				lastAirflowValue = airflow;
+				return false;
+			}
+		}
+		
+		function updateAirflowDownClick(e) {
+			document.getElementById("airflow").value = parseInt(document.getElementById("airflow").value) - 5;
+			if (document.getElementById("airflow").value < 0)
+				document.getElementById("airflow").value = 0;
+			var airflow = document.getElementById("airflow").value;
+			if (airflow !== lastAirflowValue) {
+				ws.send('Set,Airflow,' + airflow);
+				lastAirflowValue = airflow;
 				return false;
 			}
 		}
@@ -251,8 +315,12 @@
 				currentRadioValue = myRadio.value;
 				if (myRadio.value == 0) {
 					document.getElementById("airflow").disabled = true;
+					document.getElementById("airflowUp").disabled = true;
+					document.getElementById("airflowDown").disabled = true;
 				} else {
 					document.getElementById("airflow").disabled = false;
+					document.getElementById("airflowUp").disabled = false;
+					document.getElementById("airflowDown").disabled = false;
 				}
 				if (modeCommand == true) {
 					ws.send('Set,Mode,' + myRadio.value);
@@ -321,35 +389,34 @@
     </script>
 </head>
 <body onload="onLoad();">
-	<!-- <div class="container"> -->
-	  <!-- <h2>Configuration</h2> -->
-	  <!-- <div class="panel panel-default"> -->
-		<!-- <div class="panel-body"> -->
-	<!-- <form> -->
 	<div style="width: 100%; overflow: hidden;">
-		<div style="width: 240px; float: left;">
-			<fieldset>
-				<legend>Configuration</legend>
-				<strong>Target:</strong>&nbsp;
-				<input type="number" id="target" maxlength="3" style="max-width: 4em;" onkeypress="return updateTargetKey(event)" onclick="return updateTargetClick(event)"/><br>
-				<strong>Airflow:</strong>&nbsp;
-				<input type="number" id="airflow" maxlength="3" style="max-width: 4em;" onkeypress="return updateAirflowKey(event)" onclick="return updateAirflowClick(event)"/><br>
+		<div id="temperatureConfiguration" style="width: 245px; height: 120px; float: left;">
+			<fieldset style="height: 80%;">
+				<legend>Temperature Configuration</legend>
+				<strong>Target (°C):</strong>&nbsp;
+				<input type="number" id="target" maxlength="3" style="max-width: 4em;" onkeypress="return updateTargetKey(event)" onclick="return updateTargetClick(event)"/>
+				<button type="button" id="targetUp" onclick="return updateTargetUpClick(event)">↑</button>
+				<button type="button" id="targetDown" onclick="return updateTargetDownClick(event)">↓</button><br>
+				<strong>Airflow (%):</strong>&nbsp;
+				<input type="number" id="airflow" maxlength="3" style="max-width: 4em;" onkeypress="return updateAirflowKey(event)" onclick="return updateAirflowClick(event)"/>
+				<button type="button" id="airflowUp" onclick="return updateAirflowUpClick(event)">↑</button>
+				<button type="button" id="airflowDown" onclick="return updateAirflowDownClick(event)">↓</button><br>
 				<strong>State:</strong>&nbsp;
 				<input type="text" id="state" maxlength="20" style="max-width: 11em;" disabled="true"/>
 				<br>&nbsp;
 			</fieldset>
 		</div>
-		<div style="margin-left: 10px; width: 240px; float: left;">
-			<fieldset>
-				<legend>Configuration 2</legend>
+		<div id="modeConfiguration" style="margin-left: 10px; width: 245px; height: 120px; float: left;">
+			<fieldset style="height: 80%;">
+				<legend>Mode Configuration</legend>
 				<strong>Mode:</strong><br/>
 				<dd><input type="radio" name="mode" value="0" onclick="handleRadioClick(this, true);"/>Automatic<br>
 				<dd><input type="radio" name="mode" value="1" onclick="handleRadioClick(this, true);"/>Manual
 				<br>&nbsp;
 			</fieldset>
 		</div>
-		<div style="margin-left: 10px; width: 240px; float: left;">
-			<fieldset>
+		<div id="pid" style="margin-left: 10px; width: 245px; height: 120px; float: left;">
+			<fieldset style="height: 80%;">
 				<legend>PID</legend>
 				<strong>Kp:</strong>&nbsp;
 				<input type="number" id="kp" maxlength="7" style="max-width: 6em;" onkeypress="return updateKpKey(event)" onclick="return updateKpClick(event)"/><br>
@@ -362,10 +429,7 @@
 			</fieldset>
 		</div>
 	</div>
-
-	  <!-- </div> -->
-	<!-- </div> -->
-	<div style="width:70%;">
+	<div style=" width:100%;">
 		<canvas id="canvas"></canvas>
 	</div>
 	<div id="chart_div"></div>
