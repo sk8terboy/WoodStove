@@ -16,6 +16,11 @@ Wood stove management
 Type following commands:
 ```
 pip3 install -r requirements.txt
+pip3 install Adafruit_ADS1x15
+pip3 install pi-ina219
+pip3 install --upgrade google-api-python-client
+pip3 install oauth2client
+pip3 install tornado
 ```
   
 ## Using
