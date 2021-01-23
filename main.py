@@ -7,6 +7,7 @@ from pid import PID
 from agenda import Agenda
 from enum import Enum
 from web_server import WebServer
+import paho.mqtt.client as mqtt
 
 class State(Enum):
     FIRE_OUT = 0 # Feu eteint
@@ -16,8 +17,9 @@ class State(Enum):
     FIRE_OVERHEAT = 4 # Feu trop fort
     
 class Mode(Enum):
-    AUTOMATIC = 0 # Airflow set by PID
-    MANUAL = 1 # Airflow set by user
+    AUTOMATIC = 0 # Target set by room temperetaure and airflow set by PID
+    SEMI_AUTOMATIC = 1 # Airflow set by PID
+    MANUAL = 2 # Airflow set by user
 
 ##K = 0.01
 ##T = 10
@@ -39,6 +41,15 @@ DEFAULT_TEMP_TARGET = 130.0
 
 MAX_TEMPERATURE_NUMBER = 200
 
+# Room temperature management constants
+MQTT_BROKER_ADDR = "192.168.1.100"
+MIN_ROOM_TEMP = 16.0
+MAX_ROOM_TEMP = 20.0
+MIN_TARGET_TEMP = 130.0
+MAX_TARGET_TEMP = 180.0
+TARGET_SLOPE = (MIN_TARGET_TEMP - MAX_TARGET_TEMP) / (MAX_ROOM_TEMP - MIN_ROOM_TEMP)
+TARGET_INTERCEPT = MAX_TARGET_TEMP - MIN_ROOM_TEMP * TARGET_SLOPE
+
 temperatures = []
 airflows = []
 newValue = False
@@ -49,6 +60,7 @@ tempTargetDiff = 0.0
 currentTemp = 0.0
 currentMode = Mode.AUTOMATIC
 currentState = State.FIRE_OUT
+currentRoomTemp = 0.0
     
 # def motorTest():
     # print("rotate(True, 1, 3):  {:.3f}".format(motor.getAngle()))
@@ -126,8 +138,12 @@ currentState = State.FIRE_OUT
     # motor.rotateAngle(-45, 1);
     # print("Angle end: {:.3f}".format(motor.getAngle()))
     
+def on_message(client, userdata, message):
+    global currentRoomTemp
+    currentRoomTemp = float(message.payload.decode("utf-8"))
+    
 def callback(message):
-    global newValue, targetSet, temperatures, airflows, tempTarget, currentMode, currentState, currentAirFlow, pid, motor
+    global newValue, targetSet, temperatures, currentRoomTemp, airflows, tempTarget, currentMode, currentState, currentAirFlow, pid, motor
     msg = message.split(',')
     if msg[0] == 'Get':
         if msg[1] == 'Temperature':
@@ -140,6 +156,8 @@ def callback(message):
                 return 'Temperature' + str
             else:
                 return None
+        elif msg[1] == 'RoomTemperature':
+            return 'RoomTemperature,{:.1f}'.format(currentRoomTemp)
         elif msg[1] == 'Target':
             return 'Target,{:d}'.format(int(tempTarget))
         elif msg[1] == 'Airflow':
@@ -207,9 +225,17 @@ if __name__ == "__main__":
     agenda = Agenda()
     temp = Temperature()
     motor = ServoMotor()
+    client = mqtt.Client("mqtt_client")
     
     # time.sleep(5)
     # motorTest4(15)
+    
+    client.connect(MQTT_BROKER_ADDR)
+    print("Connection to broker at " + MQTT_BROKER_ADDR)
+    client.on_message = on_message
+    client.loop_start()
+    client.subscribe("shellies/shellyht-ADC6D7/sensor/temperature")
+    print("Subscription to room temperature topic")
     
     pid = PID(DEFAULT_PID_TEMP_P_GAIN, 
             DEFAULT_PID_TEMP_I_GAIN,
@@ -224,6 +250,14 @@ if __name__ == "__main__":
         try:
             currentTemp = temp.getFilteredTemperature()
             
+            if currentMode == Mode.AUTOMATIC and not currentRoomTemp == 0.0:
+                tempTarget = TARGET_SLOPE * currentRoomTemp + TARGET_INTERCEPT
+                if tempTarget < MIN_TARGET_TEMP:
+                    tempTarget = MIN_TARGET_TEMP
+                elif tempTarget > MAX_TARGET_TEMP:
+                    tempTarget = MAX_TARGET_TEMP
+                print('Target set to ' + str(tempTarget) + ' in automatic mode')
+            
             tempTargetDiff = tempTarget - currentTemp
             
             temperatures.append([time.time(), currentTemp])
@@ -233,22 +267,22 @@ if __name__ == "__main__":
                 airflows = airflows[-MAX_TEMPERATURE_NUMBER:]
             newValue = True
             
-            print('Temperature: {0:.2f}, State: {1}, Current Air Flow: {2}'.format(currentTemp, currentState, motor.getAirFlow()))
+            print('Temperature: {0:.2f}, Room temperature: {1:.1f}, State: {2}, Current Air Flow: {3}'.format(currentTemp, currentRoomTemp, currentState, motor.getAirFlow()))
         
-            # if currentMode == Mode.AUTOMATIC:
+            # if not currentMode == Mode.MANUAL:
                 # if tempTargetDiff < 10:
                     # pidOut = pid.compute(currentTemp, tempTarget, time.time())
                     # print('\tPID - out: {0}'.format(pidOut))
                     # if not targetSet:
                         # # motor.setAirFlow(int(K * pidOut))
-                        # print('\tAir Flow Set: {0}, Angle: {1}'.format(motor.getAirFlow(), motor.getAngle()))
+                        # print('\tAir Flow set: {0}, Angle: {1}'.format(motor.getAirFlow(), motor.getAngle()))
                     # else:
                         # targetSet = False
                 # else:
                     # pid.reinit(tempTarget, currentTemp, time.time())
                     # motor.setAirFlow(100)
                     
-            if currentMode == Mode.AUTOMATIC:
+            if not currentMode == Mode.MANUAL:
                 if currentState == State.FIRE_OUT:
                     if not testStateFireOut():
                         if testStateTemperatureRise():
@@ -296,7 +330,7 @@ if __name__ == "__main__":
                     pidOut = pid.compute(currentTemp, tempTarget, time.time())
                     if not targetSet:
                         motor.setAirFlow(int(K * pidOut))
-                        print('\tAir Flow Set: {0}, Angle: {1}'.format(motor.getAirFlow(), motor.getAngle()))
+                        print('\tAir flow set: {0}, Angle: {1}'.format(motor.getAirFlow(), motor.getAngle()))
                     else:
                         targetSet = False
                     if testStateTemperatureFall():

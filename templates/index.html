@@ -52,6 +52,8 @@
 							<!-- <!-- temp = 100 --> -->
 					<!-- } -->
 					<!-- chart.draw(data, options); -->
+				} else if (args[0] == 'RoomTemperature') {
+					document.getElementById('roomTemperature').value = args[1];
 				} else if (args[0] == 'Target') {
 					document.getElementById('target').value = args[1];
 					lastTargetValue = args[1];
@@ -90,7 +92,8 @@
         }
 		
 		function updateInfos() {
-			ws.send('Get,Target');
+			ws.send('Get,RoomTemperature');
+			setTimeout (function() { ws.send('Get,Target'); }, 50);
 			setTimeout (function() { ws.send('Get,Airflow'); }, 50);
 			setTimeout (function() { ws.send('Get,Mode'); }, 50);
 			setTimeout (function() { ws.send('Get,Kp'); }, 50);
@@ -203,6 +206,8 @@
 		
 		function updateData() {
 			ws.send('Get,Temperature');
+			setTimeout (function() { ws.send('Get,RoomTemperature'); }, 100);
+			setTimeout (function() { ws.send('Get,Target'); }, 100);
 			setTimeout (function() { ws.send('Get,Airflow'); }, 100);
 			setTimeout (function() { ws.send('Get,State'); }, 100);
 			setTimeout (function() { ws.send('Get,PidOut'); }, 100);
@@ -313,10 +318,23 @@
 			if (currentRadioValue != myRadio.value) {
 				currentRadioValue = myRadio.value;
 				if (myRadio.value == 0) {
+					document.getElementById("target").disabled = true;
+					document.getElementById("targetUp").disabled = true;
+					document.getElementById("targetDown").disabled = true;
+					document.getElementById("airflow").disabled = true;
+					document.getElementById("airflowUp").disabled = true;
+					document.getElementById("airflowDown").disabled = true;
+				} else if (myRadio.value == 1) {
+					document.getElementById("target").disabled = false;
+					document.getElementById("targetUp").disabled = false;
+					document.getElementById("targetDown").disabled = false;
 					document.getElementById("airflow").disabled = true;
 					document.getElementById("airflowUp").disabled = true;
 					document.getElementById("airflowDown").disabled = true;
 				} else {
+					document.getElementById("target").disabled = false;
+					document.getElementById("targetUp").disabled = false;
+					document.getElementById("targetDown").disabled = false;
 					document.getElementById("airflow").disabled = false;
 					document.getElementById("airflowUp").disabled = false;
 					document.getElementById("airflowDown").disabled = false;
@@ -389,15 +407,17 @@
 </head>
 <body onload="onLoad();">
 	<div style="width: 100%; overflow: hidden;">
-		<div id="temperatureConfiguration" style="width: 245px; height: 120px; float: left;">
+		<div id="temperatureConfiguration" style="width: 258px; height: 120px; float: left;">
 			<fieldset style="height: 80%;">
 				<legend>Temperature Configuration</legend>
+				<strong>Room temperature (°C):</strong>&nbsp;
+				<input type="number" id="roomTemperature" maxlength="3" style="max-width: 3em;" disabled="true"/><br>
 				<strong>Target (°C):</strong>&nbsp;
-				<input type="number" id="target" maxlength="3" style="max-width: 4em;" onkeypress="return updateTargetKey(event)" onclick="return updateTargetClick(event)"/>
+				<input type="number" id="target" maxlength="3" style="max-width: 3em;" onkeypress="return updateTargetKey(event)" onclick="return updateTargetClick(event)"/>
 				<button type="button" id="targetUp" onclick="return updateTargetUpClick(event)">↑</button>
 				<button type="button" id="targetDown" onclick="return updateTargetDownClick(event)">↓</button><br>
 				<strong>Airflow (%):</strong>&nbsp;
-				<input type="number" id="airflow" maxlength="3" style="max-width: 4em;" onkeypress="return updateAirflowKey(event)" onclick="return updateAirflowClick(event)"/>
+				<input type="number" id="airflow" maxlength="3" style="max-width: 3em;" onkeypress="return updateAirflowKey(event)" onclick="return updateAirflowClick(event)"/>
 				<button type="button" id="airflowUp" onclick="return updateAirflowUpClick(event)">↑</button>
 				<button type="button" id="airflowDown" onclick="return updateAirflowDownClick(event)">↓</button><br>
 				<strong>State:</strong>&nbsp;
@@ -405,16 +425,17 @@
 				<br>&nbsp;
 			</fieldset>
 		</div>
-		<div id="modeConfiguration" style="margin-left: 10px; width: 245px; height: 120px; float: left;">
+		<div id="modeConfiguration" style="margin-left: 5px; width: 258px; height: 120px; float: left;">
 			<fieldset style="height: 80%;">
 				<legend>Mode Configuration</legend>
 				<strong>Mode:</strong><br/>
 				<dd><input type="radio" name="mode" value="0" onclick="handleRadioClick(this, true);"/>Automatic<br>
-				<dd><input type="radio" name="mode" value="1" onclick="handleRadioClick(this, true);"/>Manual
+				<dd><input type="radio" name="mode" value="1" onclick="handleRadioClick(this, true);"/>Semi-automatic<br>
+				<dd><input type="radio" name="mode" value="2" onclick="handleRadioClick(this, true);"/>Manual
 				<br>&nbsp;
 			</fieldset>
 		</div>
-		<div id="pid" style="margin-left: 10px; width: 245px; height: 120px; float: left;">
+		<div id="pid" style="margin-left: 5px; width: 258px; height: 120px; float: left;">
 			<fieldset style="height: 80%;">
 				<legend>PID</legend>
 				<strong>Kp:</strong>&nbsp;
