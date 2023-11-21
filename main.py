@@ -21,34 +21,34 @@ class Mode(Enum):
     SEMI_AUTOMATIC = 1 # Airflow set by PID
     MANUAL = 2 # Airflow set by user
 
-##K = 0.01
-##T = 10
-##L = 1
-##PID_TEMP_P_GAIN = 1.2 * T / L
-##PID_TEMP_I_GAIN= 0.6 * T / (L * L) 
-##PID_TEMP_D_GAIN = 0.6 * T
-##PID_TEMP_MIN_I_ERROR = -2000
-##PID_TEMP_MAX_I_ERROR = 2000
+# General constants
+MQTT_BROKER_ADDR = "192.168.1.100"
+MAX_TEMPERATURE_NUMBER = 200
+
+# Room temperature management constants
+MIN_ROOM_TEMP = 16.0
+MAX_ROOM_TEMP = 20.0
+MIN_TARGET_TEMP = 140.0
+MAX_TARGET_TEMP = 190.0
+TARGET_SLOPE = (MIN_TARGET_TEMP - MAX_TARGET_TEMP) / (MAX_ROOM_TEMP - MIN_ROOM_TEMP)
+TARGET_INTERCEPT = MAX_TARGET_TEMP - MIN_ROOM_TEMP * TARGET_SLOPE
 
 # PID constants
+# K = 0.01
+# T = 10
+# L = 1
+# PID_TEMP_P_GAIN = 1.2 * T / L
+# PID_TEMP_I_GAIN= 0.6 * T / (L * L) 
+# PID_TEMP_D_GAIN = 0.6 * T
+# PID_TEMP_MIN_I_ERROR = -2000
+# PID_TEMP_MAX_I_ERROR = 2000
 K = 1.0
 DEFAULT_PID_TEMP_P_GAIN = 2.5
 DEFAULT_PID_TEMP_I_GAIN= 0.5
 DEFAULT_PID_TEMP_D_GAIN = 2800.0
 PID_TEMP_MIN_I_ERROR = 0.0
 PID_TEMP_MAX_I_ERROR = 100.0
-DEFAULT_TEMP_TARGET = 130.0
-
-MAX_TEMPERATURE_NUMBER = 200
-
-# Room temperature management constants
-MQTT_BROKER_ADDR = "192.168.1.100"
-MIN_ROOM_TEMP = 16.0
-MAX_ROOM_TEMP = 20.0
-MIN_TARGET_TEMP = 130.0
-MAX_TARGET_TEMP = 180.0
-TARGET_SLOPE = (MIN_TARGET_TEMP - MAX_TARGET_TEMP) / (MAX_ROOM_TEMP - MIN_ROOM_TEMP)
-TARGET_INTERCEPT = MAX_TARGET_TEMP - MIN_ROOM_TEMP * TARGET_SLOPE
+DEFAULT_TEMP_TARGET = MIN_TARGET_TEMP
 
 temperatures = []
 airflows = []
@@ -137,7 +137,15 @@ currentRoomTemp = 0.0
     # print("rotateAngle(-45): {:.3f}".format(motor.getAngle()))
     # motor.rotateAngle(-45, 1);
     # print("Angle end: {:.3f}".format(motor.getAngle()))
-    
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connection succeed")
+        client.subscribe("shellies/shellyht-ADC6D7/sensor/temperature")
+        print("Subscription to room temperature topic")
+    else:
+        print("Connection failed")
+
 def on_message(client, userdata, message):
     global currentRoomTemp
     currentRoomTemp = float(message.payload.decode("utf-8"))
@@ -230,12 +238,11 @@ if __name__ == "__main__":
     # time.sleep(5)
     # motorTest4(15)
     
+    client.on_connect = on_connect
+    client.on_message = on_message
     client.connect(MQTT_BROKER_ADDR)
     print("Connection to broker at " + MQTT_BROKER_ADDR)
-    client.on_message = on_message
     client.loop_start()
-    client.subscribe("shellies/shellyht-ADC6D7/sensor/temperature")
-    print("Subscription to room temperature topic")
     
     pid = PID(DEFAULT_PID_TEMP_P_GAIN, 
             DEFAULT_PID_TEMP_I_GAIN,
@@ -341,4 +348,5 @@ if __name__ == "__main__":
             time.sleep(10)
         except Exception as e:
             print("\nServer stopped: ", e)
+            client.loop_stop()
             break
